@@ -29,16 +29,14 @@ export default function LoginHomepage() {
   const handleSubmit = async () => {
     setIsLoading(true);
 
-    // Create success particle explosion
+    // Remove loading screen, just fade out and redirect
     setTimeout(() => {
       setIsLoading(false);
       setIsExiting(true);
-      console.log('Login attempt:', { accountName, password });
-      
       setTimeout(() => {
         router.push('/dashboard_admin');
-      }, 1200);
-    }, 1500);
+      }, 800); // Shorter fade out
+    }, 800);
   };
 
   // Enhanced animation variants
@@ -181,7 +179,7 @@ export default function LoginHomepage() {
             variants={containerVariants}
             initial="hidden"
             animate="visible"
-            exit="exit"
+            exit={{ opacity: 0, transition: { duration: 0.8, ease: "easeOut" } }} // Fade out on exit
           >
             {/* Animated gradient orbs */}
             <motion.div
@@ -543,110 +541,7 @@ export default function LoginHomepage() {
               </motion.div>
             </motion.div>
           </motion.div>
-        ) : (
-          <motion.div
-            key="exit-screen"
-            className="min-h-screen bg-gradient-to-br from-blue-600 via-purple-600 to-indigo-800 flex items-center justify-center relative overflow-hidden"
-            initial={{ opacity: 0, scale: 0.8 }}
-            animate={{ opacity: 1, scale: 1 }}
-            transition={{ duration: 1, ease: "easeOut" }}
-          >
-            {/* Success particles */}
-            {[...Array(15)].map((_, i) => (
-              <motion.div
-                key={i}
-                className="absolute w-2 h-2 bg-white rounded-full"
-                style={{
-                  left: `${50 + (Math.random() - 0.5) * 100}%`,
-                  top: `${50 + (Math.random() - 0.5) * 100}%`,
-                }}
-                initial={{ scale: 0, opacity: 0 }}
-                animate={{
-                  scale: [0, 1, 0],
-                  opacity: [0, 1, 0],
-                  y: [-100, 100],
-                  x: [(Math.random() - 0.5) * 200],
-                }}
-                transition={{
-                  duration: 2,
-                  delay: i * 0.1,
-                  ease: "easeOut",
-                }}
-              />
-            ))}
-
-            <motion.div
-              className="text-center text-white relative z-10"
-              initial={{ y: 50, opacity: 0 }}
-              animate={{ y: 0, opacity: 1 }}
-              transition={{ delay: 0.3, duration: 0.8 }}
-            >
-              <motion.div
-                className="w-24 h-24 mx-auto mb-6 relative"
-                variants={successVariants}
-                initial="initial"
-                animate="animate"
-              >
-                <div className="w-full h-full border-4 border-white border-t-transparent rounded-full relative">
-                  <motion.div
-                    className="absolute inset-2 bg-white rounded-full flex items-center justify-center"
-                    initial={{ scale: 0 }}
-                    animate={{ scale: 1 }}
-                    transition={{ delay: 0.8, duration: 0.5 }}
-                  >
-                    <motion.div
-                      initial={{ scale: 0, rotate: -180 }}
-                      animate={{ scale: 1, rotate: 0 }}
-                      transition={{ delay: 1, duration: 0.5, type: "spring" }}
-                    >
-                      ✓
-                    </motion.div>
-                  </motion.div>
-                </div>
-              </motion.div>
-              
-              <motion.h2
-                className="text-3xl font-bold mb-2"
-                initial={{ opacity: 0, y: 20 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ delay: 0.5, duration: 0.6 }}
-              >
-                Welcome Back!
-              </motion.h2>
-              <motion.p
-                className="text-blue-100 text-lg"
-                initial={{ opacity: 0, y: 20 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ delay: 0.7, duration: 0.6 }}
-              >
-                Redirecting to your dashboard...
-              </motion.p>
-              
-              <motion.div
-                className="mt-4 flex justify-center space-x-1"
-                initial={{ opacity: 0 }}
-                animate={{ opacity: 1 }}
-                transition={{ delay: 0.9, duration: 0.6 }}
-              >
-                {[...Array(3)].map((_, i) => (
-                  <motion.div
-                    key={i}
-                    className="w-2 h-2 bg-white rounded-full"
-                    animate={{
-                      scale: [1, 1.5, 1],
-                      opacity: [0.5, 1, 0.5],
-                    }}
-                    transition={{
-                      duration: 1,
-                      repeat: Infinity,
-                      delay: i * 0.2,
-                    }}
-                  />
-                ))}
-              </motion.div>
-            </motion.div>
-          </motion.div>
-        )}
+        ) : null}
       </AnimatePresence>
     </div>
   );
