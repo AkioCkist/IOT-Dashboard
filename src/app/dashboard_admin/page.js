@@ -57,39 +57,54 @@ const ProfileDashboard = () => {
   const [editForm, setEditForm] = useState({});
   const [searchTerm, setSearchTerm] = useState('');
   const [mounted, setMounted] = useState(false);
+  const [particles, setParticles] = useState([]);
 
-  // Framer Motion scroll hooks for header animation
   const { scrollY } = useScroll();
   const headerY = useTransform(scrollY, [0, 100], [0, -50]);
   const headerOpacity = useTransform(scrollY, [0, 100], [1, 0.8]);
 
   useEffect(() => {
-    // Set mounted to true after initial render to trigger animations
     setMounted(true);
   }, []);
 
-  // Filtered profiles based on search term
+  useEffect(() => {
+    const particlesArray = Array.from({ length: 30 }, (_, i) => ({
+      id: i,
+      x: Math.random() * 100 + "%",
+      y: Math.random() * 100 + "%",
+      size: Math.random() * 12 + 4,
+      duration: Math.random() * 15 + 10,
+      delay: Math.random() * 5,
+      color: [
+        "rgba(236, 72, 153, 0.3)",  // pink-500
+        "rgba(219, 39, 119, 0.3)",  // rose-600
+        "rgba(232, 121, 249, 0.3)", // fuchsia-400
+        "rgba(192, 132, 252, 0.3)", // purple-400
+      ][Math.floor(Math.random() * 4)],
+      pattern: Math.floor(Math.random() * 3)
+    }));
+    
+    setParticles(particlesArray);
+  }, []);
+
   const filteredProfiles = profiles.filter(profile =>
     profile.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
     profile.position.toLowerCase().includes(searchTerm.toLowerCase()) ||
     profile.department.toLowerCase().includes(searchTerm.toLowerCase())
   );
 
-  // React Spring trail animation for profile cards
   const trail = useTrail(filteredProfiles.length, {
     from: { opacity: 0, transform: 'translate3d(0,40px,0)' },
     to: { opacity: 1, transform: 'translate3d(0,0px,0)' },
     config: { mass: 1, tension: 280, friction: 60 },
   });
 
-  // React Spring animation for stats number
   const statsSpring = useSpring({
     from: { number: 0 },
     to: { number: profiles.length },
     config: { duration: 1000 },
   });
 
-  // Default profile structure for new additions
   const defaultProfile = {
     name: '',
     email: '',
@@ -104,13 +119,11 @@ const ProfileDashboard = () => {
     status: 'Active'
   };
 
-  // Handler for editing a profile
   const handleEdit = (profile) => {
     setEditForm({ ...profile, skills: profile.skills.join(', ') });
     setIsEditing(true);
   };
 
-  // Handler for saving a profile (add or update)
   const handleSave = () => {
     const updatedProfile = {
       ...editForm,
@@ -118,10 +131,8 @@ const ProfileDashboard = () => {
     };
 
     if (editForm.id) {
-      // Update existing profile
       setProfiles(profiles.map(p => p.id === editForm.id ? updatedProfile : p));
     } else {
-      // Add new profile
       const newProfile = {
         ...updatedProfile,
         id: profiles.length > 0 ? Math.max(...profiles.map(p => p.id)) + 1 : 1
@@ -134,10 +145,7 @@ const ProfileDashboard = () => {
     setEditForm({});
   };
 
-  // Handler for deleting a profile
   const handleDelete = (id) => {
-    // Use a custom modal or message box instead of window.confirm
-    // For this example, we'll keep it simple:
     if (confirm('Are you sure you want to delete this profile?')) {
       setProfiles(profiles.filter(p => p.id !== id));
       if (selectedProfile?.id === id) {
@@ -146,14 +154,12 @@ const ProfileDashboard = () => {
     }
   };
 
-  // Handler for adding a new profile
   const handleAddNew = () => {
     setEditForm(defaultProfile);
     setShowAddForm(true);
     setIsEditing(true);
   };
 
-  // Profile Modal Component
   const ProfileModal = ({ profile, onClose }) => (
     <AnimatePresence>
       {profile && (
@@ -162,7 +168,7 @@ const ProfileDashboard = () => {
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
           exit={{ opacity: 0 }}
-          onClick={onClose} // Close when clicking outside modal
+          onClick={onClose}
         >
           <motion.div
             className="bg-white rounded-3xl max-w-2xl w-full max-h-[90vh] overflow-y-auto relative"
@@ -170,9 +176,8 @@ const ProfileDashboard = () => {
             animate={{ scale: 1, opacity: 1, y: 0 }}
             exit={{ scale: 0.7, opacity: 0, y: 100 }}
             transition={{ type: "spring", damping: 25, stiffness: 300 }}
-            onClick={(e) => e.stopPropagation()} // Prevent modal from closing when clicking inside
+            onClick={(e) => e.stopPropagation()}
           >
-            {/* Modal Header with Animated Background */}
             <div className="relative">
               <motion.div
                 className="h-32 bg-gradient-to-r from-blue-500 via-purple-600 to-pink-500 rounded-t-3xl relative overflow-hidden"
@@ -196,8 +201,6 @@ const ProfileDashboard = () => {
                   }}
                 />
               </motion.div>
-
-              {/* Close Button */}
               <motion.button
                 onClick={onClose}
                 className="absolute top-4 right-4 text-white hover:bg-white/20 p-2 rounded-full transition-colors z-10"
@@ -206,8 +209,6 @@ const ProfileDashboard = () => {
               >
                 <X className="w-5 h-5" />
               </motion.button>
-
-              {/* Profile Avatar */}
               <motion.div
                 className="absolute -bottom-16 left-8"
                 initial={{ scale: 0, rotate: -180 }}
@@ -218,12 +219,10 @@ const ProfileDashboard = () => {
                   src={profile.avatar || 'https://placehold.co/150x150/FFF/000?text=Avatar'}
                   alt={profile.name}
                   className="w-32 h-32 rounded-full border-6 border-white object-cover shadow-2xl"
-                  onError={(e) => { e.target.onerror = null; e.target.src='https://placehold.co/150x150/FFF/000?text=Avatar'; }} // Fallback for broken images
+                  onError={(e) => { e.target.onerror = null; e.target.src='https://placehold.co/150x150/FFF/000?text=Avatar'; }}
                 />
               </motion.div>
             </div>
-
-            {/* Modal Content */}
             <motion.div
               className="pt-20 p-8"
               initial={{ opacity: 0, y: 20 }}
@@ -258,9 +257,7 @@ const ProfileDashboard = () => {
                   </motion.p>
                 </div>
                 <motion.span
-                  className={`px-4 py-2 rounded-full font-semibold ${
-                    profile.status === 'Active' ? 'bg-green-100 text-green-800' : 'bg-gray-100 text-gray-800'
-                  }`}
+                  className={`px-4 py-2 rounded-full font-semibold ${profile.status === 'Active' ? 'bg-green-100 text-green-800' : 'bg-gray-100 text-gray-800'}`}
                   initial={{ scale: 0 }}
                   animate={{ scale: 1 }}
                   transition={{ delay: 1, type: "spring", damping: 15 }}
@@ -268,21 +265,13 @@ const ProfileDashboard = () => {
                   {profile.status}
                 </motion.span>
               </div>
-
-              {/* Contact Information Grid with Staggered Animations */}
               <motion.div
                 className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6"
                 initial="hidden"
                 animate="visible"
                 variants={{
                   hidden: { opacity: 0 },
-                  visible: {
-                    opacity: 1,
-                    transition: {
-                      staggerChildren: 0.1,
-                      delayChildren: 1.1
-                    }
-                  }
+                  visible: { opacity: 1, transition: { staggerChildren: 0.1, delayChildren: 1.1 } }
                 }}
               >
                 {[
@@ -294,10 +283,7 @@ const ProfileDashboard = () => {
                   <motion.div
                     key={label}
                     className="flex items-center space-x-3 p-3 rounded-xl bg-gray-50 hover:bg-gray-100 transition-colors"
-                    variants={{
-                      hidden: { opacity: 0, y: 20 },
-                      visible: { opacity: 1, y: 0 }
-                    }}
+                    variants={{ hidden: { opacity: 0, y: 20 }, visible: { opacity: 1, y: 0 } }}
                     whileHover={{ scale: 1.02, x: 5 }}
                   >
                     <motion.div
@@ -313,8 +299,6 @@ const ProfileDashboard = () => {
                   </motion.div>
                 ))}
               </motion.div>
-
-              {/* Bio Section */}
               <motion.div
                 className="mb-6"
                 initial={{ opacity: 0, y: 20 }}
@@ -324,8 +308,6 @@ const ProfileDashboard = () => {
                 <h3 className="text-lg font-semibold text-gray-900 mb-3">About</h3>
                 <p className="text-gray-700 leading-relaxed bg-gray-50 p-4 rounded-xl">{profile.bio}</p>
               </motion.div>
-
-              {/* Skills Section with Staggered Animations */}
               <motion.div
                 className="mb-6"
                 initial={{ opacity: 0, y: 20 }}
@@ -339,23 +321,14 @@ const ProfileDashboard = () => {
                   animate="visible"
                   variants={{
                     hidden: { opacity: 0 },
-                    visible: {
-                      opacity: 1,
-                      transition: {
-                        staggerChildren: 0.1,
-                        delayChildren: 1.8
-                      }
-                    }
+                    visible: { opacity: 1, transition: { staggerChildren: 0.1, delayChildren: 1.8 } }
                   }}
                 >
                   {profile.skills.map((skill, index) => (
                     <motion.span
                       key={index}
                       className="px-3 py-2 bg-blue-100 text-blue-700 font-medium rounded-lg hover:bg-blue-200 transition-colors"
-                      variants={{
-                        hidden: { opacity: 0, scale: 0 },
-                        visible: { opacity: 1, scale: 1 }
-                      }}
+                      variants={{ hidden: { opacity: 0, scale: 0 }, visible: { opacity: 1, scale: 1 } }}
                       whileHover={{ scale: 1.05, y: -2 }}
                       whileTap={{ scale: 0.95 }}
                     >
@@ -364,8 +337,6 @@ const ProfileDashboard = () => {
                   ))}
                 </motion.div>
               </motion.div>
-
-              {/* Action Buttons */}
               <motion.div
                 className="flex space-x-3 pt-4 border-t border-gray-200"
                 initial={{ opacity: 0, y: 20 }}
@@ -398,7 +369,6 @@ const ProfileDashboard = () => {
     </AnimatePresence>
   );
 
-  // Edit/Add Form Component
   const EditForm = () => (
     <AnimatePresence>
       {(isEditing || showAddForm) && (
@@ -415,7 +385,6 @@ const ProfileDashboard = () => {
             exit={{ scale: 0.8, opacity: 0, rotateX: 15 }}
             transition={{ type: "spring", damping: 25, stiffness: 300 }}
           >
-            {/* Form Header */}
             <div className="p-6 border-b border-gray-200 bg-gradient-to-r from-blue-50 to-purple-50 rounded-t-3xl">
               <div className="flex justify-between items-center">
                 <motion.h2
@@ -440,28 +409,19 @@ const ProfileDashboard = () => {
                 </motion.button>
               </div>
             </div>
-
-            {/* Form Fields Section */}
             <motion.div
               className="p-6"
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ delay: 0.3 }}
             >
-              {/* Form fields with staggered animations */}
               <motion.div
                 className="grid grid-cols-1 md:grid-cols-2 gap-6"
                 initial="hidden"
                 animate="visible"
                 variants={{
                   hidden: { opacity: 0 },
-                  visible: {
-                    opacity: 1,
-                    transition: {
-                      staggerChildren: 0.1,
-                      delayChildren: 0.4
-                    }
-                  }
+                  visible: { opacity: 1, transition: { staggerChildren: 0.1, delayChildren: 0.4 } }
                 }}
               >
                 {[
@@ -472,10 +432,7 @@ const ProfileDashboard = () => {
                 ].map((field) => (
                   <motion.div
                     key={field.key}
-                    variants={{
-                      hidden: { opacity: 0, y: 20 },
-                      visible: { opacity: 1, y: 0 }
-                    }}
+                    variants={{ hidden: { opacity: 0, y: 20 }, visible: { opacity: 1, y: 0 } }}
                   >
                     <label className="block text-sm font-semibold text-gray-700 mb-2">
                       {field.label}
@@ -490,8 +447,6 @@ const ProfileDashboard = () => {
                     />
                   </motion.div>
                 ))}
-
-                {/* Department Dropdown */}
                 <motion.div
                   className="mt-6"
                   initial={{ opacity: 0, y: 20 }}
@@ -511,21 +466,13 @@ const ProfileDashboard = () => {
                     ))}
                   </motion.select>
                 </motion.div>
-
-                {/* Additional fields */}
                 <motion.div
                   className="grid grid-cols-1 md:grid-cols-2 gap-6 mt-6"
                   initial="hidden"
                   animate="visible"
                   variants={{
                     hidden: { opacity: 0 },
-                    visible: {
-                      opacity: 1,
-                      transition: {
-                        staggerChildren: 0.1,
-                        delayChildren: 0.9
-                      }
-                    }
+                    visible: { opacity: 1, transition: { staggerChildren: 0.1, delayChildren: 0.9 } }
                   }}
                 >
                   {[
@@ -534,10 +481,7 @@ const ProfileDashboard = () => {
                   ].map((field) => (
                     <motion.div
                       key={field.key}
-                      variants={{
-                        hidden: { opacity: 0, y: 20 },
-                        visible: { opacity: 1, y: 0 }
-                      }}
+                      variants={{ hidden: { opacity: 0, y: 20 }, visible: { opacity: 1, y: 0 } }}
                     >
                       <label className="block text-sm font-semibold text-gray-700 mb-2">
                         {field.label}
@@ -553,8 +497,6 @@ const ProfileDashboard = () => {
                     </motion.div>
                   ))}
                 </motion.div>
-
-                {/* Status and Avatar */}
                 <motion.div
                   className="grid grid-cols-1 md:grid-cols-2 gap-6 mt-6"
                   initial={{ opacity: 0, y: 20 }}
@@ -585,8 +527,6 @@ const ProfileDashboard = () => {
                     />
                   </div>
                 </motion.div>
-
-                {/* Bio and Skills */}
                 <motion.div
                   className="mt-6 space-y-6"
                   initial={{ opacity: 0, y: 20 }}
@@ -616,8 +556,6 @@ const ProfileDashboard = () => {
                     />
                   </div>
                 </motion.div>
-
-                {/* Action Buttons */}
                 <motion.div
                   className="flex space-x-4 mt-8"
                   initial={{ opacity: 0, y: 20 }}
@@ -654,20 +592,44 @@ const ProfileDashboard = () => {
     </AnimatePresence>
   );
 
-  // Render nothing if not mounted to prevent hydration errors with animations
   if (!mounted) return null;
 
   return (
     <motion.div
-      className="min-h-screen bg-gradient-to-br from-gray-50 via-blue-50/30 to-purple-50/30"
+    className="min-h-screen bg-gradient-to-br from-rose-100 via-fuchsia-100 to-purple-100 relative overflow-hidden"
       initial={{ opacity: 0 }}
       animate={{ opacity: 1 }}
-      transition={{ duration: 0.6 }} // Overall page entry animation
+      transition={{ duration: 0.6 }}
     >
-      {/* Enhanced Header */}
+      {/* Animated Background Particles */}
+      <div className="fixed inset-0 pointer-events-none">
+        {particles.map((particle) => (
+          <motion.div
+            key={particle.id}
+            className="absolute bg-blue-400 rounded-full opacity-20"
+            style={{
+              width: particle.size,
+              height: particle.size,
+              left: particle.x,
+              top: particle.y,
+            }}
+            animate={{
+              y: [0, -100, 0],
+              x: [0, Math.random() * 100 - 50, 0],
+              opacity: [0.2, 0.5, 0.2],
+            }}
+            transition={{
+              duration: particle.duration,
+              repeat: Infinity,
+              ease: "easeInOut",
+            }}
+          />
+        ))}
+      </div>
+
       <motion.div
         className="bg-white/80 backdrop-blur-xl shadow-lg border-b border-gray-200/50 sticky top-0 z-40"
-        style={{ y: headerY, opacity: headerOpacity }} // Animates based on scroll
+        style={{ y: headerY, opacity: headerOpacity }}
       >
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <motion.div
@@ -694,7 +656,6 @@ const ProfileDashboard = () => {
                 Manage team profiles and information
               </motion.p>
             </div>
-            
             <motion.button
               onClick={handleAddNew}
               className="mt-4 sm:mt-0 bg-gradient-to-r from-blue-600 to-purple-600 text-white px-8 py-4 rounded-2xl hover:from-blue-700 hover:to-purple-700 transition-all duration-300 flex items-center space-x-3 shadow-xl font-semibold"
@@ -716,7 +677,6 @@ const ProfileDashboard = () => {
         </div>
       </motion.div>
 
-      {/* Enhanced Stats and Search Section */}
       <motion.div
         className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8"
         initial={{ opacity: 0, y: 20 }}
@@ -724,7 +684,6 @@ const ProfileDashboard = () => {
         transition={{ duration: 0.6, delay: 0.6 }}
       >
         <div className="flex flex-col lg:flex-row justify-between items-start lg:items-center gap-6 mb-8">
-          {/* Total Profiles Card */}
           <motion.div
             className="bg-white/70 backdrop-blur-sm rounded-2xl p-6 shadow-lg border border-gray-200/50 w-full lg:w-auto"
             whileHover={{ scale: 1.02, y: -2 }}
@@ -746,40 +705,30 @@ const ProfileDashboard = () => {
               </div>
             </div>
           </motion.div>
-
-          {/* Enhanced Search Bar */}
           <motion.div
             className="relative flex-1 max-w-md w-full"
             initial={{ opacity: 0, x: 20 }}
             animate={{ opacity: 1, x: 0 }}
             transition={{ duration: 0.6, delay: 0.8 }}
           >
-            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-5 h-5" />
+            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-700 w-5 h-5" />
             <motion.input
               type="text"
               placeholder="Search profiles..."
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
-              className="w-full pl-10 pr-4 py-3 border-2 border-gray-200 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200 bg-white/70 backdrop-blur-sm font-medium"
+              className="w-full pl-10 pr-4 py-3 border-2 border-gray-700 bg-white/90 text-gray-900 rounded-xl focus:ring-2 focus:ring-pink-400 focus:border-transparent transition-all duration-200 font-medium shadow-md"
               whileFocus={{ scale: 1.02 }}
             />
           </motion.div>
         </div>
-
-        {/* Profile Cards Grid with Trail Animation using ProfileCard component */}
         <motion.div
           className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6"
           initial="hidden"
           animate="visible"
           variants={{
             hidden: { opacity: 0 },
-            visible: {
-              opacity: 1,
-              transition: {
-                staggerChildren: 0.07,
-                delayChildren: 0.9
-              }
-            }
+            visible: { opacity: 1, transition: { staggerChildren: 0.07, delayChildren: 0.9 } }
           }}
         >
           {trail.map((style, index) => {
@@ -798,7 +747,6 @@ const ProfileDashboard = () => {
             );
           })}
         </motion.div>
-        
         {filteredProfiles.length === 0 && searchTerm && (
           <motion.div
             className="text-center text-gray-600 py-12"
@@ -824,8 +772,6 @@ const ProfileDashboard = () => {
           </motion.div>
         )}
       </motion.div>
-
-      {/* Render Modals and Forms */}
       <ProfileModal profile={selectedProfile} onClose={() => setSelectedProfile(null)} />
       <EditForm />
     </motion.div>
@@ -833,4 +779,3 @@ const ProfileDashboard = () => {
 };
 
 export default ProfileDashboard;
-
