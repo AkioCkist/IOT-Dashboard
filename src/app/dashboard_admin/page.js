@@ -4,7 +4,13 @@ import { Plus, Edit, Trash2, Eye, X, Save, Search } from 'lucide-react';
 
 // Optimized ProfileCard with a new dark theme design
 const ProfileCard = ({ profile, setSelectedProfile, handleEdit, handleDelete }) => (
-  <div className="bg-slate-800 rounded-2xl p-5 border border-slate-700 hover:border-blue-500 transition-colors duration-300 group">
+  <div className="bg-slate-800 rounded-2xl p-5 border border-slate-700 hover:border-blue-500 transition-colors duration-300 group relative">
+    {/* Action buttons moved to top-right corner */}
+    <div className="absolute top-4 right-4 flex space-x-2 opacity-0 group-hover:opacity-100 transition-opacity z-10">
+      <button onClick={() => setSelectedProfile(profile)} className="p-2 text-slate-400 hover:text-white hover:bg-slate-700 rounded-full transition-colors"><Eye size={20} /></button>
+      <button onClick={() => handleEdit(profile)} className="p-2 text-slate-400 hover:text-white hover:bg-slate-700 rounded-full transition-colors"><Edit size={20} /></button>
+      <button onClick={() => handleDelete(profile.id)} className="p-2 text-slate-400 hover:text-red-500 hover:bg-red-500/10 rounded-full transition-colors"><Trash2 size={20} /></button>
+    </div>
     <div className="flex items-center space-x-4">
       <img
         src={profile.avatar || `https://ui-avatars.com/api/?name=${profile.name.replace(' ', '+')}&background=0D89EC&color=fff`}
@@ -13,15 +19,11 @@ const ProfileCard = ({ profile, setSelectedProfile, handleEdit, handleDelete }) 
         onError={(e) => { e.target.onerror = null; e.target.src=`https://ui-avatars.com/api/?name=${profile.name.replace(' ', '+')}&background=0D89EC&color=fff`; }}
       />
       <div>
-        <h3 className="text-xl font-bold text-slate-50">{profile.name}</h3>
+        <h3 className="text-xl font-bold text-slate-50 break-words max-w-[8rem]">{profile.name}</h3>
         <p className="text-blue-400 font-semibold">{profile.position}</p>
       </div>
     </div>
-    <div className="flex justify-end items-center space-x-2 mt-4 opacity-0 group-hover:opacity-100 transition-opacity">
-       <button onClick={() => setSelectedProfile(profile)} className="p-2 text-slate-400 hover:text-white hover:bg-slate-700 rounded-full transition-colors"><Eye size={20} /></button>
-       <button onClick={() => handleEdit(profile)} className="p-2 text-slate-400 hover:text-white hover:bg-slate-700 rounded-full transition-colors"><Edit size={20} /></button>
-       <button onClick={() => handleDelete(profile.id)} className="p-2 text-slate-400 hover:text-red-500 hover:bg-red-500/10 rounded-full transition-colors"><Trash2 size={20} /></button>
-    </div>
+    {/* Removed old button group from here */}
   </div>
 );
 
