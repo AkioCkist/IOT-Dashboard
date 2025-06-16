@@ -1,15 +1,14 @@
 "use client";
 import React, { useState, useMemo, useCallback, useRef } from 'react';
-import { Plus, Edit, Trash2, Eye, X, Save, Search } from 'lucide-react';
+import { Plus, Edit, Trash2, X, Save, Search } from 'lucide-react';
 
 // Default profile object for form state
 const defaultProfile = {
+  id: '',
   name: '',
   email: '',
   position: '',
   department: '',
-  bio: '',
-  skills: '', // keep as string for editing
   status: 'Active',
 };
 
@@ -29,11 +28,9 @@ const FormTextarea = React.memo(({ label, textareaRef, ...props }) => (
 ));
 
 // Stable ProfileCard component
-const ProfileCard = React.memo(({ profile, setSelectedProfile, handleEdit, handleDelete }) => (
+const ProfileCard = React.memo(({ profile, handleEdit, handleDelete }) => (
   <div className="bg-slate-800 rounded-2xl p-5 border border-slate-700 hover:border-blue-500 transition-colors duration-300 group relative">
-    {/* Action buttons moved to top-right corner */}
     <div className="absolute top-4 right-4 flex space-x-2 opacity-0 group-hover:opacity-100 transition-opacity z-10">
-      <button onClick={() => setSelectedProfile(profile)} className="p-2 text-slate-400 hover:text-white hover:bg-slate-700 rounded-full transition-colors"><Eye size={20} /></button>
       <button onClick={() => handleEdit(profile)} className="p-2 text-slate-400 hover:text-white hover:bg-slate-700 rounded-full transition-colors"><Edit size={20} /></button>
       <button onClick={() => handleDelete(profile.id)} className="p-2 text-slate-400 hover:text-red-500 hover:bg-red-500/10 rounded-full transition-colors"><Trash2 size={20} /></button>
     </div>
@@ -49,7 +46,6 @@ const ProfileCard = React.memo(({ profile, setSelectedProfile, handleEdit, handl
         <p className="text-blue-400 font-semibold">{profile.position}</p>
       </div>
     </div>
-    {/* Removed old button group from here */}
   </div>
 ));
 
@@ -65,14 +61,12 @@ const Modal = React.memo(({ children, onClose, isOpen }) => {
   );
 });
 
-const ProfileDashboard = () => {
-  // Create refs for form inputs
+const ProfileDashboard = () => {  // Create refs for form inputs
+  const idInputRef = useRef(null);
   const nameInputRef = useRef(null);
   const emailInputRef = useRef(null);
   const positionInputRef = useRef(null);
   const departmentInputRef = useRef(null);
-  const bioTextareaRef = useRef(null);
-  const skillsInputRef = useRef(null);
   
   const [profiles, setProfiles] = useState([
     {
@@ -245,7 +239,7 @@ const ProfileDashboard = () => {
     }
   ]);
 
-  const [selectedProfile, setSelectedProfile] = useState(null);
+  // Selected profile functionality removed
   const [isFormOpen, setIsFormOpen] = useState(false);
   const [editForm, setEditForm] = useState(defaultProfile);
   const [searchTerm, setSearchTerm] = useState('');
@@ -259,29 +253,22 @@ const ProfileDashboard = () => {
       profile.position.toLowerCase().includes(searchTerm.toLowerCase()) ||
       profile.department.toLowerCase().includes(searchTerm.toLowerCase())
     ), [profiles, searchTerm]);
-
   const handleEdit = useCallback((profile) => {
-    setEditForm({ ...profile, skills: Array.isArray(profile.skills) ? profile.skills.join(', ') : profile.skills });
+    setEditForm({ ...profile });
     setIsFormOpen(true);
   }, []);
-
   const handleSave = useCallback(() => {
-    const updatedProfileData = {
-      ...editForm,
-      skills: typeof editForm.skills === 'string' ? editForm.skills.split(',').map(skill => skill.trim()).filter(Boolean) : editForm.skills
-    };
+    const updatedProfileData = { ...editForm };
     if (editForm.id) {
       setProfiles(prev => prev.map(p => p.id === editForm.id ? updatedProfileData : p));
     } else {
-      setProfiles(prev => [...prev, { ...updatedProfileData, id: Date.now() }]);
+      setProfiles(prev => [...prev, { ...updatedProfileData, id: editForm.id || Date.now() }]);
     }
     closeModals();
   }, [editForm]);
-
   const handleDelete = useCallback((id) => {
     if (window.confirm('Are you sure you want to delete this profile?')) {
       setProfiles(prev => prev.filter(p => p.id !== id));
-      setSelectedProfile(prev => (prev?.id === id ? null : prev));
     }
   }, []);
 
@@ -289,10 +276,8 @@ const ProfileDashboard = () => {
     setEditForm(defaultProfile);
     setIsFormOpen(true);
   }, []);
-
   const closeModals = useCallback(() => {
     setIsFormOpen(false);
-    setSelectedProfile(null);
     setEditForm(defaultProfile);
     setActiveField(null);
   }, []);
@@ -306,12 +291,11 @@ const ProfileDashboard = () => {
     
     // Restore focus to the appropriate input after render
     setTimeout(() => {
+      if (field === 'id' && idInputRef.current) idInputRef.current.focus();
       if (field === 'name' && nameInputRef.current) nameInputRef.current.focus();
       if (field === 'email' && emailInputRef.current) emailInputRef.current.focus();
       if (field === 'position' && positionInputRef.current) positionInputRef.current.focus();
       if (field === 'department' && departmentInputRef.current) departmentInputRef.current.focus();
-      if (field === 'bio' && bioTextareaRef.current) bioTextareaRef.current.focus();
-      if (field === 'skills' && skillsInputRef.current) skillsInputRef.current.focus();
     }, 0);
   }, []);
 
@@ -355,7 +339,6 @@ const ProfileDashboard = () => {
             <ProfileCard
               key={profile.id}
               profile={profile}
-              setSelectedProfile={setSelectedProfile}
               handleEdit={handleEdit}
               handleDelete={handleDelete}
             />
@@ -366,34 +349,19 @@ const ProfileDashboard = () => {
             <p className="text-xl font-semibold">No profiles found.</p>
           </div>
         )}
-      </main>
-
-      <Modal isOpen={!!selectedProfile} onClose={closeModals}>
-        {selectedProfile && (
-            <div className="p-6">
-              <div className="flex justify-between items-start">
-                  <div>
-                      <h2 className="text-2xl font-bold text-slate-50">{selectedProfile.name}</h2>
-                      <p className="text-lg text-blue-400">{selectedProfile.position}</p>
-                  </div>
-                  <button onClick={closeModals} className="p-2 rounded-full hover:bg-slate-700"><X size={24}/></button>
-              </div>
-              <div className="mt-4 pt-4 border-t border-slate-700">
-                  <p className="text-slate-300">{selectedProfile.bio}</p>
-                  <div className="flex flex-wrap gap-2 mt-4">
-                      {selectedProfile.skills.map((skill) => (
-                          <span key={skill} className="px-3 py-1 bg-blue-500/10 text-blue-300 text-sm font-medium rounded-full">{skill}</span>
-                      ))}
-                  </div>
-              </div>
-            </div>
-        )}
-      </Modal>
+      </main>      {/* View details modal removed */}
       
       <Modal isOpen={isFormOpen} onClose={closeModals}>
         <div className="p-6">
           <h2 className="text-2xl font-bold text-slate-50 mb-6">{editForm.id ? 'Edit Profile' : 'Add New Profile'}</h2>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <FormInput 
+              label="ID" 
+              placeholder="Enter ID (NOT OPTIONAL)" 
+              value={editForm.id || ''} 
+              onChange={e => handleFormChange('id', e.target.value)}
+              inputRef={idInputRef}
+            />
             <FormInput 
               label="Name" 
               placeholder="John Doe" 
@@ -423,24 +391,6 @@ const ProfileDashboard = () => {
               onChange={e => handleFormChange('department', e.target.value)}
               inputRef={departmentInputRef}
             />
-            <div className="md:col-span-2">
-              <FormTextarea 
-                label="Bio" 
-                placeholder="A brief bio..." 
-                value={editForm.bio || ''} 
-                onChange={e => handleFormChange('bio', e.target.value)}
-                textareaRef={bioTextareaRef}
-              />
-            </div>
-            <div className="md:col-span-2">
-              <FormInput 
-                label="Skills (comma separated)" 
-                placeholder="React, Next.js, etc." 
-                value={editForm.skills || ''} 
-                onChange={e => handleFormChange('skills', e.target.value)}
-                inputRef={skillsInputRef}
-              />
-            </div>
           </div>
           <div className="flex justify-end space-x-3 mt-6 pt-6 border-t border-slate-700">
             <button onClick={closeModals} className="px-4 py-2 bg-slate-700 text-slate-200 rounded-lg hover:bg-slate-600 transition-colors">Cancel</button>
