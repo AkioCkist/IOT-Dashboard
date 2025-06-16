@@ -1,9 +1,35 @@
 "use client";
-import React, { useState, useEffect, useMemo, useCallback } from 'react';
+import React, { useState, useMemo, useCallback, useRef } from 'react';
 import { Plus, Edit, Trash2, Eye, X, Save, Search } from 'lucide-react';
 
-// Optimized ProfileCard with a new dark theme design
-const ProfileCard = ({ profile, setSelectedProfile, handleEdit, handleDelete }) => (
+// Default profile object for form state
+const defaultProfile = {
+  name: '',
+  email: '',
+  position: '',
+  department: '',
+  bio: '',
+  skills: '', // keep as string for editing
+  status: 'Active',
+};
+
+// Memoized Form Components to prevent re-renders
+const FormInput = React.memo(({ label, inputRef, ...props }) => (
+  <div>
+    <label className="block text-sm font-medium text-slate-300 mb-1">{label}</label>
+    <input ref={inputRef} {...props} className="w-full p-2 bg-slate-900 border border-slate-600 rounded-md text-slate-200 focus:ring-2 focus:ring-blue-500 focus:border-blue-500" />
+  </div>
+));
+
+const FormTextarea = React.memo(({ label, textareaRef, ...props }) => (
+  <div>
+    <label className="block text-sm font-medium text-slate-300 mb-1">{label}</label>
+    <textarea ref={textareaRef} {...props} className="w-full p-2 bg-slate-900 border border-slate-600 rounded-md text-slate-200 focus:ring-2 focus:ring-blue-500 focus:border-blue-500" />
+  </div>
+));
+
+// Stable ProfileCard component
+const ProfileCard = React.memo(({ profile, setSelectedProfile, handleEdit, handleDelete }) => (
   <div className="bg-slate-800 rounded-2xl p-5 border border-slate-700 hover:border-blue-500 transition-colors duration-300 group relative">
     {/* Action buttons moved to top-right corner */}
     <div className="absolute top-4 right-4 flex space-x-2 opacity-0 group-hover:opacity-100 transition-opacity z-10">
@@ -16,7 +42,7 @@ const ProfileCard = ({ profile, setSelectedProfile, handleEdit, handleDelete }) 
         src={profile.avatar || `https://ui-avatars.com/api/?name=${profile.name.replace(' ', '+')}&background=0D89EC&color=fff`}
         alt={profile.name}
         className="w-16 h-16 rounded-full object-cover border-2 border-slate-600"
-        onError={(e) => { e.target.onerror = null; e.target.src=`https://ui-avatars.com/api/?name=${profile.name.replace(' ', '+')}&background=0D89EC&color=fff`; }}
+        onError={e => { e.target.onerror = null; e.target.src = `https://ui-avatars.com/api/?name=${profile.name.replace(' ', '+')}&background=0D89EC&color=fff`; }}
       />
       <div>
         <h3 className="text-xl font-bold text-slate-50 break-words max-w-[8rem]">{profile.name}</h3>
@@ -25,9 +51,29 @@ const ProfileCard = ({ profile, setSelectedProfile, handleEdit, handleDelete }) 
     </div>
     {/* Removed old button group from here */}
   </div>
-);
+));
+
+// Stable Modal component
+const Modal = React.memo(({ children, onClose, isOpen }) => {
+  if (!isOpen) return null;
+  return (
+    <div className="fixed inset-0 bg-black/70 backdrop-blur-sm flex items-center justify-center p-4 z-50" onClick={onClose}>
+      <div className="bg-slate-800 rounded-2xl max-w-2xl w-full max-h-[90vh] overflow-y-auto border border-slate-700 shadow-2xl" onClick={e => e.stopPropagation()}>
+        {children}
+      </div>
+    </div>
+  );
+});
 
 const ProfileDashboard = () => {
+  // Create refs for form inputs
+  const nameInputRef = useRef(null);
+  const emailInputRef = useRef(null);
+  const positionInputRef = useRef(null);
+  const departmentInputRef = useRef(null);
+  const bioTextareaRef = useRef(null);
+  const skillsInputRef = useRef(null);
+  
   const [profiles, setProfiles] = useState([
     {
       id: 1,
@@ -201,8 +247,11 @@ const ProfileDashboard = () => {
 
   const [selectedProfile, setSelectedProfile] = useState(null);
   const [isFormOpen, setIsFormOpen] = useState(false);
-  const [editForm, setEditForm] = useState(null);
+  const [editForm, setEditForm] = useState(defaultProfile);
   const [searchTerm, setSearchTerm] = useState('');
+  
+  // Store the active input field
+  const [activeField, setActiveField] = useState(null);
 
   const filteredProfiles = useMemo(() =>
     profiles.filter(profile =>
@@ -211,70 +260,61 @@ const ProfileDashboard = () => {
       profile.department.toLowerCase().includes(searchTerm.toLowerCase())
     ), [profiles, searchTerm]);
 
-  const defaultProfile = { name: '', email: '', position: '', department: '', bio: '', skills: [], status: 'Active' };
-
   const handleEdit = useCallback((profile) => {
-    setEditForm({ ...profile, skills: profile.skills.join(', ') });
+    setEditForm({ ...profile, skills: Array.isArray(profile.skills) ? profile.skills.join(', ') : profile.skills });
     setIsFormOpen(true);
   }, []);
 
   const handleSave = useCallback(() => {
     const updatedProfileData = {
       ...editForm,
-      skills: editForm.skills.split(',').map(skill => skill.trim()).filter(Boolean)
+      skills: typeof editForm.skills === 'string' ? editForm.skills.split(',').map(skill => skill.trim()).filter(Boolean) : editForm.skills
     };
-
     if (editForm.id) {
-      setProfiles(profiles.map(p => p.id === editForm.id ? updatedProfileData : p));
+      setProfiles(prev => prev.map(p => p.id === editForm.id ? updatedProfileData : p));
     } else {
       setProfiles(prev => [...prev, { ...updatedProfileData, id: Date.now() }]);
     }
     closeModals();
-  }, [editForm, profiles]);
+  }, [editForm]);
 
   const handleDelete = useCallback((id) => {
     if (window.confirm('Are you sure you want to delete this profile?')) {
-      setProfiles(prevProfiles => prevProfiles.filter(p => p.id !== id));
-      setSelectedProfile(prevSelected => (prevSelected?.id === id ? null : prevSelected));
+      setProfiles(prev => prev.filter(p => p.id !== id));
+      setSelectedProfile(prev => (prev?.id === id ? null : prev));
     }
   }, []);
 
   const handleAddNew = useCallback(() => {
     setEditForm(defaultProfile);
     setIsFormOpen(true);
-  }, [defaultProfile]);
+  }, []);
 
-  const closeModals = () => {
-      setIsFormOpen(false);
-      setSelectedProfile(null);
-      setEditForm(null);
-  };
-  
-  const FormInput = ({ label, ...props }) => (
-    <div>
-        <label className="block text-sm font-medium text-slate-300 mb-1">{label}</label>
-        <input {...props} className="w-full p-2 bg-slate-900 border border-slate-600 rounded-md text-slate-200 focus:ring-2 focus:ring-blue-500 focus:border-blue-500" />
-    </div>
-  );
-  
-  const FormTextarea = ({ label, ...props }) => (
-    <div>
-        <label className="block text-sm font-medium text-slate-300 mb-1">{label}</label>
-        <textarea {...props} className="w-full p-2 bg-slate-900 border border-slate-600 rounded-md text-slate-200 focus:ring-2 focus:ring-blue-500 focus:border-blue-500" />
-    </div>
-  );
+  const closeModals = useCallback(() => {
+    setIsFormOpen(false);
+    setSelectedProfile(null);
+    setEditForm(defaultProfile);
+    setActiveField(null);
+  }, []);
 
-  const Modal = ({ children, onClose, isOpen }) => {
-    if (!isOpen) return null;
-    return (
-        <div className="fixed inset-0 bg-black/70 backdrop-blur-sm flex items-center justify-center p-4 z-50" onClick={onClose}>
-            <div className="bg-slate-800 rounded-2xl max-w-2xl w-full max-h-[90vh] overflow-y-auto border border-slate-700 shadow-2xl" onClick={(e) => e.stopPropagation()}>
-                {children}
-            </div>
-        </div>
-    );
-  };
-  
+  // Handle form field changes with focus retention
+  const handleFormChange = useCallback((field, value) => {
+    setEditForm(prev => ({ ...prev, [field]: value }));
+    
+    // Keep track of which field is active
+    setActiveField(field);
+    
+    // Restore focus to the appropriate input after render
+    setTimeout(() => {
+      if (field === 'name' && nameInputRef.current) nameInputRef.current.focus();
+      if (field === 'email' && emailInputRef.current) emailInputRef.current.focus();
+      if (field === 'position' && positionInputRef.current) positionInputRef.current.focus();
+      if (field === 'department' && departmentInputRef.current) departmentInputRef.current.focus();
+      if (field === 'bio' && bioTextareaRef.current) bioTextareaRef.current.focus();
+      if (field === 'skills' && skillsInputRef.current) skillsInputRef.current.focus();
+    }, 0);
+  }, []);
+
   return (
     <div className="min-h-screen bg-slate-900 text-slate-300">
       <header className="bg-slate-800/80 backdrop-blur-lg border-b border-slate-700 sticky top-0 z-40">
@@ -305,7 +345,7 @@ const ProfileDashboard = () => {
             <input
               type="text"
               placeholder="Search profiles..."
-              onChange={(e) => setSearchTerm(e.target.value)}
+              onChange={e => setSearchTerm(e.target.value)}
               className="w-full pl-10 pr-4 py-2 border border-slate-600 bg-slate-800 text-slate-200 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
             />
           </div>
@@ -351,25 +391,62 @@ const ProfileDashboard = () => {
       </Modal>
       
       <Modal isOpen={isFormOpen} onClose={closeModals}>
-          <div className="p-6">
-              <h2 className="text-2xl font-bold text-slate-50 mb-6">{editForm?.id ? 'Edit Profile' : 'Add New Profile'}</h2>
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  <FormInput label="Name" placeholder="John Doe" value={editForm?.name} onChange={e => setEditForm({...editForm, name: e.target.value})} />
-                  <FormInput label="Email" type="email" placeholder="john@example.com" value={editForm?.email} onChange={e => setEditForm({...editForm, email: e.target.value})} />
-                  <FormInput label="Position" placeholder="Frontend Developer" value={editForm?.position} onChange={e => setEditForm({...editForm, position: e.target.value})} />
-                  <FormInput label="Department" placeholder="Engineering" value={editForm?.department} onChange={e => setEditForm({...editForm, department: e.target.value})} />
-                  <div className="md:col-span-2">
-                    <FormTextarea label="Bio" placeholder="A brief bio..." value={editForm?.bio} onChange={e => setEditForm({...editForm, bio: e.target.value})} />
-                  </div>
-                  <div className="md:col-span-2">
-                    <FormInput label="Skills (comma separated)" placeholder="React, Next.js, etc." value={editForm?.skills} onChange={e => setEditForm({...editForm, skills: e.target.value})} />
-                  </div>
-              </div>
-              <div className="flex justify-end space-x-3 mt-6 pt-6 border-t border-slate-700">
-                  <button onClick={closeModals} className="px-4 py-2 bg-slate-700 text-slate-200 rounded-lg hover:bg-slate-600 transition-colors">Cancel</button>
-                  <button onClick={handleSave} className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors">{editForm?.id ? 'Update' : 'Create'}</button>
-              </div>
+        <div className="p-6">
+          <h2 className="text-2xl font-bold text-slate-50 mb-6">{editForm.id ? 'Edit Profile' : 'Add New Profile'}</h2>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <FormInput 
+              label="Name" 
+              placeholder="John Doe" 
+              value={editForm.name || ''} 
+              onChange={e => handleFormChange('name', e.target.value)}
+              inputRef={nameInputRef}
+            />
+            <FormInput 
+              label="Email" 
+              type="email" 
+              placeholder="john@example.com" 
+              value={editForm.email || ''} 
+              onChange={e => handleFormChange('email', e.target.value)}
+              inputRef={emailInputRef}
+            />
+            <FormInput 
+              label="Position" 
+              placeholder="Frontend Developer" 
+              value={editForm.position || ''} 
+              onChange={e => handleFormChange('position', e.target.value)}
+              inputRef={positionInputRef}
+            />
+            <FormInput 
+              label="Department" 
+              placeholder="Engineering" 
+              value={editForm.department || ''} 
+              onChange={e => handleFormChange('department', e.target.value)}
+              inputRef={departmentInputRef}
+            />
+            <div className="md:col-span-2">
+              <FormTextarea 
+                label="Bio" 
+                placeholder="A brief bio..." 
+                value={editForm.bio || ''} 
+                onChange={e => handleFormChange('bio', e.target.value)}
+                textareaRef={bioTextareaRef}
+              />
+            </div>
+            <div className="md:col-span-2">
+              <FormInput 
+                label="Skills (comma separated)" 
+                placeholder="React, Next.js, etc." 
+                value={editForm.skills || ''} 
+                onChange={e => handleFormChange('skills', e.target.value)}
+                inputRef={skillsInputRef}
+              />
+            </div>
           </div>
+          <div className="flex justify-end space-x-3 mt-6 pt-6 border-t border-slate-700">
+            <button onClick={closeModals} className="px-4 py-2 bg-slate-700 text-slate-200 rounded-lg hover:bg-slate-600 transition-colors">Cancel</button>
+            <button onClick={handleSave} className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors">{editForm.id ? 'Update' : 'Create'}</button>
+          </div>
+        </div>
       </Modal>
 
     </div>
