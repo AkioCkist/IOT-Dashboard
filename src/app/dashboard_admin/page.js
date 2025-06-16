@@ -357,7 +357,7 @@ const ProfileDashboard = () => {  // Create refs for form inputs
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <FormInput 
               label="ID" 
-              placeholder="Enter ID (NOT OPTIONAL)" 
+              placeholder="Enter ID (〃＞目＜)〃DO NOT LEAVE IT BLANK" 
               value={editForm.id || ''} 
               onChange={e => handleFormChange('id', e.target.value)}
               inputRef={idInputRef}
